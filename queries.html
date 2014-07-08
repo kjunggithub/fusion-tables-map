@@ -1,0 +1,46 @@
+SELECT * FROM 1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM ORDER BY ST_DISTANCE(Address, LATLNG(-0.12623619999999391,51.5001524)) LIMIT 3
+
+https://stackoverflow.com/questions/9775952/possible-to-iterate-through-markers-after-applying-a-query-in-a-fusiontableslaye
+
+
+TABLE ID
+1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM
+
+API KEY 
+AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE
+
+QUERY
+
+GET https://www.googleapis.com/fusiontables/v1/tables/1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM/columns/Address?key={AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE}
+
+X-JavaScript-User-Agent:  Google APIs Explorer
+
+https://www.googleapis.com/fusiontables/v1/query?sql=SELECT  
+MINIMUM(Lat) AS MinLat, MAXIMUM(Lat) AS MaxLat,
+MINIMUM(Long) AS MinLong, MAXIMUM(Long) AS MaxLong
+FROM <table_id>
+
+GET https://www.googleapis.com/fusiontables/v1/tables/1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM/columns/Address?
+
+key={AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE}
+
+X-JavaScript-User-Agent:  Google APIs Explorer
+
+ORDER BY ST_DISTANCE(LATLNG(37.4,-122.1))
+
+queryList.push("SELECT STATION,STATION_NAME,ELEVATION,LATITUDE FROM ");
+queryList.push(tableid);
+ //query seems to work when I comment out the line below.
+ queryList.push("ORDER BY ST_DISTANCE(LATITUDE, LATLNG("+coordinate.lat()+","+coordinate.lng()+")) LIMIT 1");
+ var query = encodeURIComponent(queryList.join(' '));
+
+ http://www.google.com/fusiontables/api/query?sql=SELECT+*+FROM+2066206+ORDER+BY+ST_DISTANCE(geometry,+LATLNG(51.5081289,-0.12800500000003012))
+
+ https://www.googleapis.com/fusiontables/v1/query?sql=SELECT Address, Name FROM 1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM ORDER BY ST_DISTANCE(Address, LATLNG(-0.12623619999999391,51.5001524)) LIMIT 2&key=AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE
+
+ https://www.googleapis.com/fusiontables/v1/query?sql=SELECT Address, Name FROM 1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM ORDER BY  ST_DISTANCE(Addresss,+LATLNG(51.5081289,-0.12800500000003012)) DESC LIMIT 2&key=AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE
+
+
+ WORKING
+
+https://www.googleapis.com/fusiontables/v1/query?sql=SELECT Address, Name FROM 1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM ORDER BY ST_DISTANCE(Address, LATLNG(-0.12623619999999391,51.5001524)) LIMIT 2&key=AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE
