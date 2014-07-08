@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+
+	<style type="text/css">
+		
+	</style>
+</head>
+<body>
+	<h1>Address!</h1>
+	<input type="text" class="address" value="">
+	<input type="button" class="js-address-button" value="Address Go!">
+
+	<h1>Geolocation</h1>
+	<input type="button" class="js-geolocation-button" value="Getolocation Go!">
+
+	<script type="text/javascript">
+		function getAddressGeocode() {
+			// geocoder instance
+			var geocoder = new google.maps.Geocoder();
+
+			// get address input value
+			var address = $('.address').val();
+			geocoder.geocode(
+				// pass address
+				{ address: address },
+
+				// pass callback closure
+				function(results, status) {
+
+					// if result found, alert it
+					if (status == google.maps.GeocoderStatus.OK) {
+						alert(results[0].geometry.location);
+						// if there is an error, show error
+					} else {
+	              		window.alert('Address could not be geocoded: ' + status);
+	        		}
+				}
+			);
+		}
+
+		function getGeolocation() {
+			if ("geolocation" in navigator) {
+				navigator.geolocation.getCurrentPosition(success, error);
+			}
+		}
+
+		//Get the latitude and the longitude;
+		function success(position) {
+		    var lat = position.coords.latitude;
+		    var lng = position.coords.longitude;
+		    alert(lat + ' ' + lng);
+		}
+
+		function error(errorCode) {
+			alert("Geocoder failed " + errorCode.message);
+		}
+
+		// on click of the address button
+		$('.js-address-button').on('click', function(e) {
+			e.preventDefault();
+			getAddressGeocode();
+		});
+
+		// on click of the geol
+		$('.js-geolocation-button').on('click', function(e) {
+			e.preventDefault();
+			getGeolocation();
+		});
+
+	</script>
+</body>
+</html>
