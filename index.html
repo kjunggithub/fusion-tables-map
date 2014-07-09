@@ -42,20 +42,58 @@
 
 	<!-- javascript -->
 	<script type="text/javascript">
-		var tableId = '1AdAVfWzFtqLnhLm7_K_dcNWkFprdA_nJ7r1XDpgM';
-		var locationColumn = 'Address';
-		var limitCount = 5;
-		var marker = [];
 
-		function dataHandler(response) {
+		// global settings
+		var tableID, locationColumn, limitCount, marker, markerSetTimeout, userMarkerIcon, listMarkerIcon;
+		
+		tableId = '1f4sSdQFH3TWtsu2KcExw8qaeuxkZPjWK_9RZ-RiZ';
+		locationColumn = 'Address';
+		limitCount = 5;
+		markerSetTimeout = 3000;
+
+		userMarkerIcon = '';
+		listMarkerIcon = 'http://www.poke-amph.com/heartgoldsoulsilver/sprites/143.png';
+
+		ListMarker = [];
+		ListInfowindow = [];
+
+		// put code for the info card here somedivs and stuff ya know?
+		function createInfoWindowDom(data) {
+			var dom = 
+			'<h2>' +  data[1] + '</h2>' +
+			 data[1] + '<br />' +
+			 data[4] + '<br />' +
+			 data[5] + '<br />' +
+			 data[6] + '<br />' +
+			 data[7];
+			return dom;
+		}
+
+		function createListResultDom(data) {
+			var dom = 
+			'<li><h1>' + data[1] + '</h1> <p>' + data[4] +'</p> <p>' + data[5] +'</p> <p>' + data[6] +'</p> <p>' + data[7] +'</p> <p><a href="#" class="js-add-marker" data-address="' + data[0] + '" data-id="' + data[2] + '">' + data[1] + ' - ' + data[0] + '</a></p> </li>';
+			return dom;
+		}
+
+		function populateMap(response) {
+
+			// placeholder array for nearest locations found
 			var list = [];
 
 			$.each(response.rows, function(index, value) {
-				list.push('<li><a href="#" class="js-add-marker" data-address="' + value[0] + '" data-id="' + value[2] + '">' + value[1] + ' - ' + value[0] + '</a></li>');
+
+				var listDom = createListResultDom(value);
+
+				// push a location item to the list array
+				list.push(listDom);
+
+				// address and id variables from a location
+				var address, id;
+
+				address = value[0];
+				id = value[2];
 
 				// geocoder instance
-				var address = value[0];
-				var id = value[2];
 				var geocoder = new google.maps.Geocoder();
 
 				// get address input value
@@ -68,23 +106,32 @@
 
 						// if result found, alert it
 						if (google.maps.GeocoderStatus.OK === status) {
-							var latitude = results[0].geometry.location.lat();
-							var longitude = results[0].geometry.location.lng();
-							var location = new google.maps.LatLng(latitude, longitude);
+							var latitude, longitude, location;
+
+							latitude = results[0].geometry.location.lat();
+							longitude = results[0].geometry.location.lng();
+
+							location = new google.maps.LatLng(latitude, longitude);
 
 							// place current location marker
-							marker[id] = new google.maps.Marker({
+							ListMarker[id] = new google.maps.Marker({
 							    position: location,
+							    icon: listMarkerIcon,
 							    animation: google.maps.Animation.DROP,
 							    map: map
 							});
 
-							//Create an infoWindow
-							google.maps.event.addListener(marker[id], "mouseover", function (e) {
-								var infowindow = new google.maps.InfoWindow();
-								infowindow.setContent(address);
-								infowindow.open(map, marker[id]);
-								setTimeout(function () { infowindow.close(); }, 3000);
+							// create an infoWindow
+							ListInfowindow[id] = new google.maps.InfoWindow();
+
+							// make infowindow dom
+							var infodom = createInfoWindowDom(value);
+
+							ListInfowindow[id].setContent(infodom);
+
+							google.maps.event.addListener(ListMarker[id], "mouseover", function (e) {
+								ListInfowindow[id].open(map, ListMarker[id]);
+								setTimeout(function () { ListInfowindow[id].close(); }, markerSetTimeout);
 					       });		
 
 							// if there is an error, show error
@@ -94,22 +141,23 @@
 					}
 				);
 			});
-
+	
+			// first empty the list
 			$('.list').empty();
+
+			// populate the list with results
 			$('.list').append(list.join(''));
 
 			$(".js-add-marker").on("click", function(e) {
 				e.preventDefault();
+				var id, address;
 
-				var id = $(this).data("id");
-				var address = $(this).data("address");
-				map.setCenter(marker[id].getPosition());
+				id = $(this).data("id");
+				address = $(this).data("address");
+				map.setCenter(ListMarker[id].getPosition());
 
-				var infowindow = new google.maps.InfoWindow();
-				infowindow.setContent(address);
-				infowindow.open(map, marker[id]);
-				setTimeout(function () { infowindow.close(); }, 3000);
-
+				ListInfowindow[id].open(map, ListMarker[id]);
+				setTimeout(function () { ListInfowindow[id].close(); }, markerSetTimeout);
 			});
 		}
 
@@ -118,9 +166,10 @@
 			var queryApiUrl = 'https://www.googleapis.com/fusiontables/v1/query?sql=';
 		    var queryApiKey = '&key=AIzaSyDCwHjLkVa4oD8sWXI-3aTHfg-F1QMRdv4';
 
-		    var query = "SELECT Address, Name, ID FROM " + tableId + " ORDER BY ST_DISTANCE(" + locationColumn + ", LATLNG(" + latitude + ", " + longitude + "))" + " LIMIT " + limitCount + " ";
+		    var query = "SELECT Address, Name, ID, Street, Region, Postal, Phone, Website FROM " + tableId + " ORDER BY ST_DISTANCE(" + locationColumn + ", LATLNG(" + latitude + ", " + longitude + "))" + " LIMIT " + limitCount + " ";
 		    var queryurl = encodeURI(queryApiUrl + query + queryApiKey);
-		    var jqxhr = $.get(queryurl, dataHandler, "jsonp");
+
+		    var jqxhr = $.get(queryurl, populateMap, "jsonp");
 		}
 
 		function getMap(latitude, longitude) {
@@ -136,33 +185,32 @@
 			map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
 			// place current location marker
-			var marker = new google.maps.Marker({
+			var userMarker = new google.maps.Marker({
 			    position: location,
-			    title: 'Your Location',
-			    icon: 'http://www.poke-amph.com/heartgoldsoulsilver/sprites/143.png',
+			    icon: userMarkerIcon,
 			    animation: google.maps.Animation.DROP,
 			    map: map
-
 			});
 
 			var infowindow = new google.maps.InfoWindow();
 			infowindow.setContent("<p>hello</p>");
 										
-			infowindow.open(map, marker); // click on marker opens info window 
-			setTimeout(function () { infowindow.close(); }, 3000);
+			// infowindow.open(map, userMarker); // click on marker opens info window 
+			// setTimeout(function () { infowindow.close(); }, markerSetTimeout);
 
-			google.maps.event.addListener(marker, "mouseover", function (e) {
-				infowindow.open(map, marker);
-				setTimeout(function () { infowindow.close(); }, 3000);
-	       });	
+			// google.maps.event.addListener(userMarker, "mouseover", function (e) {
+			// 	infowindow.open(map, userMarker);
+			// 	setTimeout(function () { infowindow.close(); }, markerSetTimeout);
+	  //      });	
 
 		}
 
 		function getAddressGeocode() {
-			// geocoder instance
-			var geocoder = new google.maps.Geocoder();
 			// get address input value
 			var address = $('.address').val();
+
+			// geocoder instance
+			var geocoder = new google.maps.Geocoder();
 			geocoder.geocode(
 				// pass address
 				{ address: address },
@@ -172,6 +220,8 @@
 
 					// if result found, alert it
 					if (google.maps.GeocoderStatus.OK === status) {
+
+						// unset the address input
 						$('.address').val('');
 
 						var latitude = results[0].geometry.location.lat();
@@ -189,9 +239,13 @@
 
 		//Get the latitude and the longitude;
 		function success(position) {
-			latitude = position.coords.latitude;
-			longitude = position.coords.longitude;
+			var latitude, longitude;
 
+			// set lat and lng variables from geolocation object
+			 latitude = position.coords.latitude;
+			 longitude = position.coords.longitude;
+
+			 // Generate the map and populate the map
 			getMap(latitude, longitude);
 			getList(latitude, longitude);
 		}
@@ -206,17 +260,23 @@
 			}
 		}
 
+		// event listeners
 		// on click of the address button
 		$('.js-address-button').on('click', function(e) {
 			e.preventDefault();
-
 			getAddressGeocode();
+		});
+
+		$(document).on('keydown', 'input.address', function(e) {
+		    if(e.which === 13) {
+		    	e.preventDefault();
+		    	getAddressGeocode();
+		    }
 		});
 
 		// on click of the geol
 		$('.js-geolocation-button').on('click', function(e) {
 			e.preventDefault();
-
 			getGeolocation();
 		});
 	</script>
