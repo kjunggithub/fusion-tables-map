@@ -24,15 +24,85 @@
 
 	<h1>Map!</h1>
 	<div id="map_canvas">
-		
 	</div>
+	
+	<h1>List!</h1>
+	<ul class="list">
+	</ul>
 
 	<!-- javascript -->
 	<script type="text/javascript">
+		var tableId = '1WJ7fNQQwkFUFY92LORi7vxHsV-bUFThj3sOupQyY';
+		var locationColumn = 'Address';
+		var limitCount = 10;
+
+		function jumpMarker(address) {
+			// geocoder instance
+			var geocoder = new google.maps.Geocoder();
+			// get address input value
+			geocoder.geocode(
+				// pass address
+				{ address: address },
+
+				// pass callback closure
+				function(results, status) {
+
+					// if result found, alert it
+					if (google.maps.GeocoderStatus.OK === status) {
+
+						var latitude = results[0].geometry.location.lat();
+						var longitude = results[0].geometry.location.lng();
+
+						var location = new google.maps.LatLng(latitude, longitude);
+						// centers it to the address clicked
+						map.setCenter(location);
+
+						// place current location marker
+						var marker = new google.maps.Marker({
+						    position: location,
+						    icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+						    map: map
+						});
+
+						//Create an infoWindow
+						var infowindow = new google.maps.InfoWindow();
+									
+						infowindow.setContent("<p>hello</p>");
+					    infowindow.open(map, marker); // click on marker opens info window 
+						
+		
+						// if there is an error, show error
+					} else {
+	              		window.alert('Address could not be geocoded: ' + status);
+	        		}
+				}
+			);
+
+		}
+
+		function dataHandler(response) {
+			var list = [];
+			$.each(response.rows, function(index, value) {
+				list.push('<li><a href="#" id="something" class="js-add-marker" data-address="' + value[0] + '">' + value[1] + ' - ' + value[0] + '</a></li>');
+			});
+
+			$('.list').empty();
+			$('.list').append(list.join(''));
+
+		    //do something with the data using response.rows
+		}
+
+		function getList(latitude, longitude) {
+			var queryApiUrl = 'https://www.googleapis.com/fusiontables/v1/query?sql=';
+		    var queryApiKey = '&key=AIzaSyD1vHnFhMv73cFSR0apTc8vpfEfwpas4qE';
+
+		    // write your SQL as normal, then encode it
+		    var query = "SELECT Address, Name FROM " + tableId + " ORDER BY ST_DISTANCE(" + locationColumn + ", LATLNG(" + latitude + ", " + longitude +  ")) " + " LIMIT " + limitCount;
+		    var queryurl = encodeURI(queryApiUrl + query + queryApiKey);
+		    var jqxhr = $.get(queryurl, dataHandler, "jsonp");
+		}
 
 		function getMap(latitude, longitude) {
-			var tableId = '1fa2D62r4NYCz6apCnH4hzpEdTUjOubmHi5LeUlXM';
-			var locationColumn = 'Address';
 
 			var location = new google.maps.LatLng(latitude, longitude);
 			var mapOptions = {
@@ -42,12 +112,13 @@
 			};
 
 			// create the map
-			var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+			map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
 			// place current location marker
 			var marker = new google.maps.Marker({
 			    position: location,
 			    title: 'Your Location',
+			    animation: google.maps.Animation.DROP,
 			    map: map
 			});
 
@@ -57,16 +128,20 @@
 			    select: locationColumn,
 			    from: tableId,
 			    orderBy: 'ST_DISTANCE(' +  locationColumn + ', LATLNG(' +  latitude + ',' + longitude + '))',
-			    limit: 3
+			    limit: limitCount
+			  },
+			  options: {
+			    styleId: 2,
+			    templateId: 2
 			  },
 			  map: map
 			});
 		}
 
 		function getAddressGeocode() {
+
 			// geocoder instance
 			var geocoder = new google.maps.Geocoder();
-
 			// get address input value
 			var address = $('.address').val();
 			geocoder.geocode(
@@ -78,10 +153,13 @@
 
 					// if result found, alert it
 					if (google.maps.GeocoderStatus.OK === status) {
-						var userLocation = results[0].geometry.location;
-						alert(userLocation);
-						return userLocation;
+						$('.address').val('');
 
+						var latitude = results[0].geometry.location.lat();
+						var longitude = results[0].geometry.location.lng();
+
+						getMap(latitude, longitude);
+						getList(latitude, longitude);
 						// if there is an error, show error
 					} else {
 	              		window.alert('Address could not be geocoded: ' + status);
@@ -96,6 +174,7 @@
 			longitude = position.coords.longitude;
 
 			getMap(latitude, longitude);
+			getList(latitude, longitude);
 		}
 
 		function error(errorCode) {
@@ -113,7 +192,6 @@
 			e.preventDefault();
 
 			getAddressGeocode();
-			getMap(latitude, longitude);
 		});
 
 		// on click of the geol
@@ -121,6 +199,13 @@
 			e.preventDefault();
 
 			getGeolocation();
+		});
+
+		$(document).on("click", ".js-add-marker", function(e) {
+			e.preventDefault();
+
+			var address = $(".js-add-marker").data("address");
+			jumpMarker(address);
 		});
 	</script>
 </body>
