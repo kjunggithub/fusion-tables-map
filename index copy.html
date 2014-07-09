@@ -8,16 +8,8 @@
 	<!-- styles -->
 	<style type="text/css">
 		#map_canvas {
-			width:50%;
+			width:100%;
 		  	height:300px;
-		  	float:right;
-		  	clear:both;
-		}
-
-		#list {
-			width:50%;
-			float:right;
-			margin:0 auto;
 		}
 	</style>
 </head>
@@ -30,96 +22,86 @@
 	<h1>Geolocation</h1>
 	<input type="button" class="js-geolocation-button" value="Getolocation Go!">
 
+	<h1>Map!</h1>
 	<div id="map_canvas">
-		<h1>Map!</h1>
 	</div>
 	
-	<div id="list">
-		<h1>List!</h1>
-		<ul class="list">
-		</ul>
-	</div>	
+	<h1>List!</h1>
+	<ul class="list">
+	</ul>
 
 	<!-- javascript -->
 	<script type="text/javascript">
 		var tableId = '1AdAVfWzFtqLnhLm7_K_dcNWkFprdA_nJ7r1XDpgM';
 		var locationColumn = 'Address';
-		var limitCount = 5;
-		var marker = [];
+		var limitCount = 10;
+
+		function jumpMarker(address) {
+			// geocoder instance
+			var geocoder = new google.maps.Geocoder();
+			// get address input value
+			geocoder.geocode(
+				// pass address
+				{ address: address },
+
+				// pass callback closure
+				function(results, status) {
+
+					// if result found, alert it
+					if (google.maps.GeocoderStatus.OK === status) {
+
+						var latitude = results[0].geometry.location.lat();
+						var longitude = results[0].geometry.location.lng();
+
+						var location = new google.maps.LatLng(latitude, longitude);
+						// centers it to the address clicked
+						map.setCenter(location);
+
+						// place current location marker
+						var marker = new google.maps.Marker({
+						    position: location,
+						    icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+						    map: map
+						});
+
+						//Create an infoWindow
+						var infowindow = new google.maps.InfoWindow();
+									
+						infowindow.setContent("<p>hello</p>");
+					    infowindow.open(map, marker); // click on marker opens info window 
+						
+		
+						// if there is an error, show error
+					} else {
+	              		window.alert('Address could not be geocoded: ' + status);
+	        		}
+				}
+			);
+
+		}
 
 		function dataHandler(response) {
 			var list = [];
-
 			$.each(response.rows, function(index, value) {
-				list.push('<li><a href="#" class="js-add-marker" data-address="' + value[0] + '" data-id="' + value[2] + '">' + value[1] + ' - ' + value[0] + '</a></li>');
-
-				// geocoder instance
-				var address = value[0];
-				var id = value[2];
-				var geocoder = new google.maps.Geocoder();
-
-				// get address input value
-				geocoder.geocode(
-					// pass address
-					{ address: address },
-
-					// pass callback closure
-					function(results, status) {
-
-						// if result found, alert it
-						if (google.maps.GeocoderStatus.OK === status) {
-							var latitude = results[0].geometry.location.lat();
-							var longitude = results[0].geometry.location.lng();
-							var location = new google.maps.LatLng(latitude, longitude);
-
-							// place current location marker
-							marker[id] = new google.maps.Marker({
-							    position: location,
-							    animation: google.maps.Animation.DROP,
-							    map: map
-							});
-
-							//Create an infoWindow
-							google.maps.event.addListener(marker[id], "mouseover", function (e) {
-								var infowindow = new google.maps.InfoWindow();
-								infowindow.setContent(address);
-								infowindow.open(map, marker[id]);
-								setTimeout(function () { infowindow.close(); }, 3000);
-					       });		
-
-							// if there is an error, show error
-						} else {
-		              		window.alert('Address could not be geocoded: ' + status);
-		        		}
-					}
-				);
+				list.push('<li><a href="#" id="something" class="js-add-marker" data-address="' + value[0] + '">' + value[1] + ' - ' + value[0] + '</a></li>');
 			});
 
 			$('.list').empty();
 			$('.list').append(list.join(''));
 
-			$(".js-add-marker").on("click", function(e) {
-				e.preventDefault();
-
-				var id = $(this).data("id");
-				var address = $(this).data("address");
-				map.setCenter(marker[id].getPosition());
-
-				var infowindow = new google.maps.InfoWindow();
-				infowindow.setContent(address);
-				infowindow.open(map, marker[id]);
-				setTimeout(function () { infowindow.close(); }, 3000);
-
-			});
+		    //do something with the data using response.rows
 		}
 
 		function getList(latitude, longitude) {
-			// fusion table vars
 			var queryApiUrl = 'https://www.googleapis.com/fusiontables/v1/query?sql=';
 		    var queryApiKey = '&key=AIzaSyDCwHjLkVa4oD8sWXI-3aTHfg-F1QMRdv4';
+		    console.log(queryApiKey);
 
-		    var query = "SELECT Address, Name, ID FROM " + tableId + " ORDER BY ST_DISTANCE(" + locationColumn + ", LATLNG(" + latitude + ", " + longitude + "))" + " LIMIT " + limitCount + " ";
-		    var queryurl = encodeURI(queryApiUrl + query + queryApiKey);
+		    // write your SQL as normal, then encode it
+		    var query = "SELECT Address, Name FROM " + tableId + " ORDER BY ST_DISTANCE(" + locationColumn + ", LATLNG(" + latitude + ", " + longitude + "))" + " LIMIT " + limitCount + " ";
+		    var queryurl = (queryApiUrl + query + queryApiKey);
+		    	console.log(queryurl);
+		    // var queryurl = encodeURI(queryApiUrl + query + queryApiKey);
 		    var jqxhr = $.get(queryurl, dataHandler, "jsonp");
 		}
 
@@ -127,7 +109,7 @@
 
 			var location = new google.maps.LatLng(latitude, longitude);
 			var mapOptions = {
-				zoom: 13,
+				zoom: 10,
 				center: location,
 				mapTypeId: google.maps.MapTypeId.ROADMAP
 			};
@@ -139,26 +121,28 @@
 			var marker = new google.maps.Marker({
 			    position: location,
 			    title: 'Your Location',
-			    icon: 'http://www.poke-amph.com/heartgoldsoulsilver/sprites/143.png',
 			    animation: google.maps.Animation.DROP,
 			    map: map
-
 			});
 
-			var infowindow = new google.maps.InfoWindow();
-			infowindow.setContent("<p>hello</p>");
-										
-			infowindow.open(map, marker); // click on marker opens info window 
-			setTimeout(function () { infowindow.close(); }, 3000);
-
-			google.maps.event.addListener(marker, "mouseover", function (e) {
-				infowindow.open(map, marker);
-				setTimeout(function () { infowindow.close(); }, 3000);
-	       });	
-
+			// load the fusion table data on to the map
+			var layer = new google.maps.FusionTablesLayer({
+			  query: {
+			    select: locationColumn,
+			    from: tableId,
+			    orderBy: 'ST_DISTANCE(' +  locationColumn + ', LATLNG(' +  latitude + ',' + longitude + '))',
+			    limit: limitCount
+			  },
+			  options: {
+			    styleId: 2,
+			    templateId: 2
+			  },
+			  map: map
+			});
 		}
 
 		function getAddressGeocode() {
+
 			// geocoder instance
 			var geocoder = new google.maps.Geocoder();
 			// get address input value
@@ -218,6 +202,13 @@
 			e.preventDefault();
 
 			getGeolocation();
+		});
+
+		$(document).on("click", ".js-add-marker", function(e) {
+			e.preventDefault();
+
+			var address = $(".js-add-marker").data("address");
+			jumpMarker(address);
 		});
 	</script>
 </body>
